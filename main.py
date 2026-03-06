@@ -9,10 +9,18 @@ CORS(app)
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-SYSTEM_PROMPT = """You are a data extraction assistant for court reporters. Extract job details from booking emails. Return ONLY a JSON object with these exact keys: case_number, case_caption, deponent, job_date (YYYY-MM-DD), job_time (HH:MM), timezone, location, delivery_intent, noticing_party_name, payer_email. If a field is not found, return null for that field. Do not include any explanation or text outside the JSON object.
-
-For delivery_intent, only use one of: standard, rough, expedited, same_day, next_day. If unclear, use null.
-For timezone, use IANA format like America/Los_Angeles, America/New_York, etc. If unclear, use null."""
+SYSTEM_PROMPT = (
+    "You are a data extraction assistant for court reporters. "
+    "Extract job details from booking emails. "
+    "Return ONLY a JSON object with these exact keys: "
+    "case_number, case_caption, deponent, job_date (YYYY-MM-DD), "
+    "job_time (HH:MM), timezone, location, delivery_intent, "
+    "noticing_party_name, payer_email. "
+    "If a field is not found, return null for that field. "
+    "Do not include any explanation or text outside the JSON object. "
+    "For delivery_intent, only use one of: standard, rough, expedited, same_day, next_day. If unclear, use null. "
+    "For timezone, use IANA format like America/Los_Angeles, America/New_York, etc. If unclear, use null."
+)
 
 @app.route("/")
 def index():
@@ -27,7 +35,7 @@ def extract_email():
             return jsonify({"error": "emailText is required"}), 400
         model = genai.GenerativeModel("gemini-2.0-flash")
         response = model.generate_content(
-            f"{SYSTEM_PROMPT}\n\nEmail:\n{email_text}",
+            SYSTEM_PROMPT + "\n\nEmail:\n" + email_text,
             generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
         extracted = json.loads(response.text)
@@ -38,11 +46,3 @@ def extract_email():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
-```
-
-Also open `requirements.txt` and add `flask-cors` so it looks like:
-```
-flask
-flask-cors
-google-generativeai
-gunicorn
