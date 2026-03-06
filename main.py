@@ -1,9 +1,11 @@
 import os
 import json
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import google.generativeai as genai
 
 app = Flask(__name__)
+CORS(app)
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
@@ -16,14 +18,8 @@ For timezone, use IANA format like America/Los_Angeles, America/New_York, etc. I
 def index():
     return jsonify({"status": "CSR Suite Backend is running"})
 
-@app.route("/extract-email", methods=["POST", "OPTIONS"])
+@app.route("/extract-email", methods=["POST"])
 def extract_email():
-    if request.method == "OPTIONS":
-        response = jsonify({})
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        return response
     try:
         data = request.get_json()
         email_text = data.get("emailText")
@@ -35,12 +31,18 @@ def extract_email():
             generation_config=genai.GenerationConfig(response_mime_type="application/json")
         )
         extracted = json.loads(response.text)
-        resp = jsonify({"extracted": extracted})
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        return resp
+        return jsonify({"extracted": extracted})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+```
+
+Also open `requirements.txt` and add `flask-cors` so it looks like:
+```
+flask
+flask-cors
+google-generativeai
+gunicorn
