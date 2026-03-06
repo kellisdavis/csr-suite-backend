@@ -1,13 +1,13 @@
 import os
 import json
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai
 
 app = Flask(__name__)
 CORS(app)
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 SYSTEM_PROMPT = (
     "You are a data extraction assistant for court reporters. "
@@ -33,12 +33,16 @@ def extract_email():
         email_text = data.get("emailText")
         if not email_text:
             return jsonify({"error": "emailText is required"}), 400
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=SYSTEM_PROMPT + "\n\nEmail:\n" + email_text,
-            config={"response_mime_type": "application/json"}
-        )
-        extracted = json.loads(response.text)
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": SYSTEM_PROMPT + "\n\nEmail:\n" + email_text}]}],
+            "generationConfig": {"responseMimeType": "application/json"}
+        }
+        res = requests.post(url, json=payload)
+        res.raise_for_status()
+        text = res.json()["candidates"][0]["content"]["parts"][0]["text"]
+        extracted = json.loads(text)
         return jsonify({"extracted": extracted})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -46,3 +50,11 @@ def extract_email():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+```
+
+Also update `requirements.txt` to remove the google package entirely:
+```
+flask
+flask-cors
+requests
+gunicorn
