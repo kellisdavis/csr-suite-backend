@@ -22,7 +22,7 @@ def extract_email():
         email_text = data.get("emailText")
         if not email_text:
             return jsonify({"error": "emailText is required"}), 400
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
         payload = {
             "contents": [{"parts": [{"text": SYSTEM_PROMPT + "\n\nEmail:\n" + email_text}]}],
             "generationConfig": {"responseMimeType": "application/json"}
