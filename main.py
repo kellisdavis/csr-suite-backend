@@ -2,12 +2,12 @@ import os
 import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+from google import genai
 
 app = Flask(__name__)
 CORS(app)
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 SYSTEM_PROMPT = (
     "You are a data extraction assistant for court reporters. "
@@ -33,10 +33,10 @@ def extract_email():
         email_text = data.get("emailText")
         if not email_text:
             return jsonify({"error": "emailText is required"}), 400
-        model = genai.GenerativeModel("gemini-2.0-flash")
-        response = model.generate_content(
-            SYSTEM_PROMPT + "\n\nEmail:\n" + email_text,
-            generation_config=genai.GenerationConfig(response_mime_type="application/json")
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=SYSTEM_PROMPT + "\n\nEmail:\n" + email_text,
+            config={"response_mime_type": "application/json"}
         )
         extracted = json.loads(response.text)
         return jsonify({"extracted": extracted})
